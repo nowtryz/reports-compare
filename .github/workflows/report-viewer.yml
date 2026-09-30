@@ -1,0 +1,51 @@
+# Builds report-viewer/ into a single self-contained HTML file and publishes it on GitHub Pages at
+# https://<user>.github.io/<repo>/reports-compare/. The page holds no data: scored files are loaded
+# by drag-and-drop and read locally in the browser.
+#
+# One-time setup: Settings → Pages → Source: "GitHub Actions".
+# NB: an Actions deployment replaces the whole Pages site; anything else published on this repo's
+# Pages must be built into the same _site/ here.
+name: Deploy report viewer
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: Lay out the site
+        run: |
+          mkdir -p _site/reports-compare
+          cp dist/index.html _site/index.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
