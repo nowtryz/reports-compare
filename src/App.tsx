@@ -31,6 +31,7 @@ import { StudyView } from "./components/StudyView";
 import { SummaryView } from "./components/SummaryView";
 import { applyFilters, pickRandom } from "./data";
 import type {
+  DisplayOptions,
   Filters,
   ScoredFile,
   SectionScope,
@@ -63,8 +64,9 @@ export default function App() {
   const [sectionScope, setSectionScope] = useState<SectionScope>("disease");
   // App-level so the chosen mode survives moving between studies (and reloading another file).
   const [textMode, setTextMode] = useState<TextMode>("diff");
+  const [display, setDisplay] = useState<DisplayOptions>({ showWhitespace: false, showTokens: false });
   const toggleTextMode = () => setTextMode((m) => (m === "diff" ? "side-by-side" : "diff"));
-  const [navOpened, { toggle: toggleNav }] = useDisclosure();
+  const [navOpened, { toggle: toggleNav, close: closeNav }] = useDisclosure();
   const { setColorScheme } = useMantineColorScheme();
   const colorScheme = useComputedColorScheme("light");
 
@@ -88,6 +90,8 @@ export default function App() {
   // Back from a study returns to the (filtered) list it was opened from. The URL never changes.
   const navigate = (next: HistoryEntry) => {
     if (next.tab !== tab || next.currentId !== currentId) window.history.pushState(next, "");
+    // On small screens the navbar overlays the page: hide it to show where we went.
+    closeNav();
     setTab(next.tab);
     setCurrentId(next.currentId);
     setFilters(next.filters);
@@ -312,6 +316,8 @@ export default function App() {
             metric={metric}
             thresholds={thresholds}
             onThresholdsChange={setThresholds}
+            display={display}
+            onDisplayChange={setDisplay}
           />
         </AppShell.Section>
       </AppShell.Navbar>
@@ -348,6 +354,7 @@ export default function App() {
               metric={metric}
               thresholds={thresholds}
               textMode={textMode}
+              display={display}
               position={position}
               total={filtered.length}
               onPrev={() => step(-1)}

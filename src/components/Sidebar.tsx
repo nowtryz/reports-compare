@@ -8,6 +8,7 @@ import {
   RangeSlider,
   Select,
   Stack,
+  Switch,
   Text,
   TextInput,
   Tooltip,
@@ -22,7 +23,7 @@ import {
 import { useMemo } from "react";
 
 import { countBy, formatScore, severityLabel } from "../data";
-import type { Filters, Range, ScoredFile, Thresholds } from "../types";
+import type { DisplayOptions, Filters, Range, ScoredFile, Thresholds } from "../types";
 
 interface Props {
   data: ScoredFile;
@@ -37,6 +38,8 @@ interface Props {
   metric: string;
   thresholds: Thresholds;
   onThresholdsChange: (thresholds: Thresholds) => void;
+  display: DisplayOptions;
+  onDisplayChange: (display: DisplayOptions) => void;
 }
 
 export function Sidebar({
@@ -51,6 +54,8 @@ export function Sidebar({
   metric,
   thresholds,
   onThresholdsChange,
+  display,
+  onDisplayChange,
 }: Props) {
   const set = (patch: Partial<Filters>) => onFiltersChange({ ...filters, ...patch });
 
@@ -217,6 +222,29 @@ export function Sidebar({
       <Text size="xs" c="dimmed">
         Defaults are the 33rd / 67th percentiles over the whole file.
       </Text>
+
+      <Divider />
+
+      <Text fw={600} size="sm" tt="uppercase" c="dimmed">
+        Display
+      </Text>
+      <Switch
+        label="Line breaks"
+        description="Keep the texts' line breaks and spacing; in the diff, also highlight whitespace changes"
+        checked={display.showWhitespace}
+        onChange={(e) => onDisplayChange({ ...display, showWhitespace: e.currentTarget.checked })}
+      />
+      <Switch
+        label="Token boundaries"
+        description={
+          typeof data.meta.text_model === "string"
+            ? `Separate the ${data.meta.text_model} tokens; hover one to see it as a string`
+            : "Needs a text_model in the file"
+        }
+        disabled={typeof data.meta.text_model !== "string"}
+        checked={display.showTokens}
+        onChange={(e) => onDisplayChange({ ...display, showTokens: e.currentTarget.checked })}
+      />
     </Stack>
   );
 }

@@ -31,6 +31,14 @@ export interface ScoredFile {
 /** How a section's texts are shown: two columns, or one inline word diff. */
 export type TextMode = "side-by-side" | "diff";
 
+/** How texts are drawn, in both text modes. */
+export interface DisplayOptions {
+  /** Line breaks and spacing kept, with a ↵ mark at each break; the diff shows whitespace changes. */
+  showWhitespace: boolean;
+  /** Token boundaries drawn, the token shown on hover. Needs a loaded tokenizer. */
+  showTokens: boolean;
+}
+
 /** By-section table of the summary: whole-file corpus scores, or the selected disease's means. */
 export type SectionScope = "file" | "disease";
 

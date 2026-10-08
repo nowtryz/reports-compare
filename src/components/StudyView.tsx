@@ -16,9 +16,10 @@ import {
 import { IconCheck, IconChevronLeft, IconChevronRight, IconCopy, IconDice5 } from "@tabler/icons-react";
 
 import { formatScore, severityLabel } from "../data";
-import type { ScoredFile, Study, TextMode, Thresholds } from "../types";
+import { useTokenizer } from "../tokenizer";
+import type { DisplayOptions, ScoredFile, Study, TextMode, Thresholds } from "../types";
 import { ScoreDot } from "./ScoreDot";
-import { DiffLegend, WordDiff } from "./WordDiff";
+import { DiffLegend, TextDiff, TokenText } from "./TextDiff";
 
 interface Props {
   data: ScoredFile;
@@ -26,6 +27,7 @@ interface Props {
   metric: string;
   thresholds: Thresholds;
   textMode: TextMode;
+  display: DisplayOptions;
   position: number | null; // index in the filtered list, null when the study is filtered out
   total: number;
   onPrev: () => void;
@@ -39,6 +41,7 @@ export function StudyView({
   metric,
   thresholds,
   textMode,
+  display,
   position,
   total,
   onPrev,
@@ -46,7 +49,14 @@ export function StudyView({
   onRandom,
 }: Props) {
   const metricLabel = data.metrics.find((m) => m.key === metric)?.label ?? metric;
+  const whiteSpace = display.showWhitespace ? "pre-wrap" : "normal";
   const sections = data.sections.filter(({ key }) => key in study.ground_truth);
+  const textModel = data.meta.text_model;
+  const tokenizer = useTokenizer(
+    (textMode === "diff" || display.showTokens) && typeof textModel === "string"
+      ? textModel
+      : undefined,
+  );
 
   return (
     <Stack gap="lg">
@@ -112,7 +122,7 @@ export function StudyView({
           Views ({study.views.length}): {study.views.join(", ")}
         </Text>
       </Spoiler>
-      {textMode === "diff" && <DiffLegend />}
+      {textMode === "diff" && <DiffLegend tokenizer={tokenizer} />}
 
       {sections.map(({ key, title }) => {
         const scores = study.scores[key] ?? {};
@@ -139,20 +149,33 @@ export function StudyView({
               </Group>
             </Group>
             {textMode === "diff" ? (
-              <WordDiff reference={study.ground_truth[key]} generated={study.generated[key] ?? ""} />
+              <TextDiff
+                reference={study.ground_truth[key]}
+                generated={study.generated[key] ?? ""}
+                tokenizer={tokenizer}
+                options={display}
+              />
             ) : (
               <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
                 <Stack gap={4}>
                   <Text size="xs" tt="uppercase" fw={600} c="dimmed">
                     Reference
                   </Text>
-                  <Text>{study.ground_truth[key]}</Text>
+                  <Text style={{ whiteSpace }}>
+                    <TokenText text={study.ground_truth[key]} tokenizer={tokenizer} options={display} />
+                  </Text>
                 </Stack>
                 <Stack gap={4}>
                   <Text size="xs" tt="uppercase" fw={600} c="dimmed">
                     Generated
                   </Text>
-                  <Text>{study.generated[key] || <Text span c="dimmed">(empty)</Text>}</Text>
+                  <Text style={{ whiteSpace }}>
+                    {study.generated[key] ? (
+                      <TokenText text={study.generated[key]} tokenizer={tokenizer} options={display} />
+                    ) : (
+                      <Text span c="dimmed">(empty)</Text>
+                    )}
+                  </Text>
                 </Stack>
               </SimpleGrid>
             )}
